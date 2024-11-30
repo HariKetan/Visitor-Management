@@ -1,4 +1,8 @@
- <a href="?status=Accepted&id={{order.id}}" class="btn btn-success"><img src="/static/images/baseline_check_circle_black_24dp.png" width="23" height="23"></a>
+<!-- .\venv\Scripts\Activate.ps1   
+uvicorn app:app --reload                                                         
+cloudflared tunnel --url http://127.0.0.1:8000 -->
+
+ <!-- <a href="?status=Accepted&id={{order.id}}" class="btn btn-success"><img src="/static/images/baseline_check_circle_black_24dp.png" width="23" height="23"></a>
 <a href="?status=Rejected&id={{order.id}}" class="btn btn-danger"><img src="/static/images/baseline_delete_black_24dp.png" width="23" height="23"></a> {% endcomment %
 
 @app.post("/Fregister",response_class=HTMLResponse)
@@ -32,4 +36,4 @@ def create_post(request:Request, name:str = Form(...),department:str = Form(...)
       const date = curr_date;
       const time = timeInput.value;
       console.log(`Date and time selected: ${date} ${time}`);
-     }
+     } -->

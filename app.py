@@ -3,7 +3,8 @@ from fastapi import FastAPI,Request, Query, File, UploadFile
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from markupsafe import re
+import bcrypt
+import re
 import starlette.status as status
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.responses import RedirectResponse, Response
@@ -11,6 +12,7 @@ import starlette.status as status
 from typing import Optional 
 from dbcontroller import DBController
 import sqlite3
+
 
 app = FastAPI()
 
@@ -53,16 +55,17 @@ def admin_login(request:Request, email:str = Form(...), password:str=Form(...)):
         request.session.setdefault('role', 1)
         return RedirectResponse("/FFdashboard", status_code=status.HTTP_302_FOUND)
 
-@app.post("/teacherlogin",response_class=HTMLResponse)
-def teacher_login(request:Request, email:str = Form(...), password:str=Form(...)):
+
+@app.post("/teacherlogin", response_class=HTMLResponse)
+def teacher_login(request: Request, email: str = Form(...), password: str = Form(...)):
     
     conn = sqlite3.connect("app.db")
     cursor = conn.cursor()
 
     # Retrieve the salt and hashed password for the user
-    cursor.execute('select * from addteachers where email =? and password=?', (email,password,))
+    cursor.execute('SELECT password FROM addteachers WHERE email =?', (email,))
     result = cursor.fetchone()
-    if not result:
+    if not result or not bcrypt.checkpw(password.encode('utf-8'), result[0]):
         return templates.TemplateResponse("/login2.html", {"request": request, "msg": "Invalid Email or Password"})
     else:
         request.session.setdefault("isLogin", True)
@@ -185,18 +188,22 @@ def create(request:Request):
     
 
 
-@app.post("/Fregister",response_class=HTMLResponse)
-def create_post(request:Request, name:str = Form(...),department:str = Form(...),contact_number:int = Form(...), date_of_birth:str = Form(...), email:str = Form(...), teachers_id:int = Form(...), password:str = Form(...), photo: UploadFile = File(...)):
+   
+@app.post("/Fregister", response_class=HTMLResponse)
+def create_post(request: Request, name: str = Form(...), department: str = Form(...), contact_number: int = Form(...), date_of_birth: str = Form(...), email: str = Form(...), teachers_id: int = Form(...), password: str = Form(...), photo: UploadFile = File(...)):
     file_path = "static/images/" + photo.filename
     with open(file_path, "wb") as f:
         f.write(photo.file.read())
-        
-    data = {"name":name, "department":department, "contact_number":contact_number, "date_of_birth":date_of_birth, "email":email,"teachers_id":teachers_id, "password":password, "photo":file_path}
-    if(db.insert("addteachers",data=data)):
-        return templates.TemplateResponse("Fregister.html",{"request":request,"msg":"Account created successfully!!"})
-    else:
-        return templates.TemplateResponse("Fregister.html",{"request":request,"msg":"Unable to create account"})
+
+    # Hash the password
+    hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
     
+    data = {"name": name, "department": department, "contact_number": contact_number, "date_of_birth": date_of_birth, "email": email, "teachers_id": teachers_id, "password": hashed_password, "photo": file_path}
+    if(db.insert("addteachers", data=data)):
+        return templates.TemplateResponse("Fregister.html", {"request": request, "msg": "Account created successfully!!"})
+    else:
+        return templates.TemplateResponse("Fregister.html", {"request": request, "msg": "Unable to create account"})
+
     
 @app.get("/login1", response_class=HTMLResponse)
 def create(request:Request):
